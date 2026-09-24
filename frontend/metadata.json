@@ -1,0 +1,6 @@
+{
+  "name": "Charge Grid - Multi-Tenant EV Fleet Charging Orchestration Platform",
+  "description": "Multi-tenant real-time EV fleet charging management dashboard with live WebSocket session board, capacity throttling, site power analytics, and driver portals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

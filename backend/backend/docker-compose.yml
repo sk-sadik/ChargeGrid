@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: chargegrid-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - ev-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chargegrid-api
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB_NAME=chargegrid
+      - SECRET_KEY=your-secret-key-change-in-production-min-32-chars
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - ALLOCATOR_INTERVAL_SECONDS=60
+      - SITE_POWER_CAP_KW=50
+      - WS_HEARTBEAT_INTERVAL=30
+      - APP_ENV=development
+      - DEBUG=true
+      - CORS_ALLOWED_ORIGINS=["http://localhost:3000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+    networks:
+      - ev-network
+    command: >
+      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+volumes:
+  mongo_data:
+
+networks:
+  ev-network:
+    driver: bridge
