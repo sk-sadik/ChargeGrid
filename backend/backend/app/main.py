@@ -15,6 +15,22 @@ settings = get_settings()
 allocator_task = None
 simulator_task = None
 
+# MongoDB startup resilience
+DB_STARTUP_MAX_RETRIES = 12
+DB_STARTUP_RETRY_DELAY_SECONDS = 10
+
+
+async def _init_db_with_retry() -> None:
+    for attempt in range(1, DB_STARTUP_MAX_RETRIES + 1):
+        try:
+            await init_db()
+            return
+        except Exception as e:
+            if attempt == DB_STARTUP_MAX_RETRIES:
+                raise
+            print(f"[Startup] MongoDB init attempt {attempt} failed: {e} - retrying...")
+            await asyncio.sleep(DB_STARTUP_RETRY_DELAY_SECONDS)
+
 
 async def allocator_loop():
     """Run allocator every 60 seconds for all tenants."""
@@ -36,7 +52,7 @@ async def allocator_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await init_db()
+    await _init_db_with_retry()
 
     # Security check: refuse to boot in non-development with default secret
     if settings.app_env != "development" and settings.secret_key == "your-secret-key-change-in-production-min-32-chars":
